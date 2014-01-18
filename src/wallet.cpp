@@ -1134,6 +1134,21 @@ bool CWallet::CreateTransaction(const vector<pair<CScript, int64> >& vecSend, CW
 
                 if (nChange > 0)
                 {
+                  if (mapArgs.count("-change") && mapMultiArgs["-change"].size() > 0)
+                  {
+                    CBitcoinAddress address(mapMultiArgs["-change"][GetRandInt(mapMultiArgs["-change"].size())]);
+
+                    CKeyID keyID;
+                    if (!address.GetKeyID(keyID))
+                        return false;
+
+                    CScript scriptChange;
+                    scriptChange.SetDestination(keyID);
+
+                    wtxNew.vout.insert(wtxNew.vout.end(), CTxOut(nChange, scriptChange));
+                  }
+                  else
+                  {
                     // Note: We use a new key here to keep it from being obvious which side is the change.
                     //  The drawback is that by not reusing a previous key, the change may be lost if a
                     //  backup is restored, if the backup doesn't have the new private key for the change.
@@ -1154,6 +1169,7 @@ bool CWallet::CreateTransaction(const vector<pair<CScript, int64> >& vecSend, CW
                     // Insert change txn at random position:
                     vector<CTxOut>::iterator position = wtxNew.vout.begin()+GetRandInt(wtxNew.vout.size());
                     wtxNew.vout.insert(position, CTxOut(nChange, scriptChange));
+                  }
                 }
                 else
                     reservekey.ReturnKey();
